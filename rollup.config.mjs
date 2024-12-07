@@ -1,6 +1,6 @@
 export default {
   input: './src/y-websocket.js',
-  external: id => /^(lib0|yjs|y-protocols)/.test(id),
+  external: id => /^(lib0|yjs|y-protocols|loglevel)/.test(id),
   output: [{
     name: 'y-websocket',
     file: 'dist/y-websocket.cjs',
