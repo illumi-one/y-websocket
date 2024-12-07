@@ -16,11 +16,19 @@ import { Observable } from 'lib0/observable'
 import * as math from 'lib0/math'
 import * as url from 'lib0/url'
 import * as env from 'lib0/environment'
+import log from "loglevel";
 
 export const messageSync = 0
 export const messageQueryAwareness = 3
 export const messageAwareness = 1
 export const messageAuth = 2
+
+export const YWebsocketLoggerName = "YWebsocketProviderLogger"
+export const YWebsocketAwarenessLoggerName = "YWebsocketProviderAwarenessLogger"
+export const YWebsocketSyncLoggerName = "YWebsocketProviderSyncLogger"
+const logger = log.getLogger(YWebsocketLoggerName)
+const alogger = log.getLogger(YWebsocketAwarenessLoggerName)
+const slogger = log.getLogger(YWebsocketSyncLoggerName)
 
 /**
  *                       encoder,          decoder,          provider,          emitSynced, messageType
@@ -43,7 +51,7 @@ messageHandlers[messageSync] = (
   }
   encoding.writeVarUint(encoder, messageSync)
   encoding.writeVarString(encoder, docGuid)
-
+  logger.debug(`syncing doc: ${docGuid}, decoder size ${decoder.arr.length}, position ${decoder.pos}`)
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
     encoder,
@@ -68,6 +76,7 @@ messageHandlers[messageQueryAwareness] = (
   _messageType
 ) => {
   const docGuid = decoding.readVarString(decoder)
+  log.debug("query awareness for: ", docGuid)
   const doc = provider.getDoc(docGuid)
   if (!doc) {
     console.error('doc not found with id: ', docGuid)
@@ -90,7 +99,7 @@ messageHandlers[messageAwareness] = (
     console.error('doc not found with id: ', docGuid)
     return
   }
-
+  alogger.debug("receiving awareness update for: ", docGuid)
   awarenessProtocol.applyAwarenessUpdate(
     provider.getAwareness(docGuid),
     decoding.readVarUint8Array(decoder),
@@ -158,6 +167,7 @@ const needSend = (encoder) => {
  */
 const setupWS = (provider) => {
   if (provider.shouldConnect && provider.ws === null) {
+    logger.debug("Setting up WS", provider.url)
     const websocket = new provider._WS(provider.url, provider.protocols)
     websocket.binaryType = 'arraybuffer'
     provider.ws = websocket
@@ -174,9 +184,11 @@ const setupWS = (provider) => {
       }
     }
     websocket.onerror = (event) => {
+      logger.error("WebSocket error:", event)
       provider.emit('connection-error', [event, provider])
     }
     websocket.onclose = (event) => {
+      logger.error("WebSocket onClose:", event)
       provider.emit('connection-close', [event, provider])
       provider.ws = null
       provider.wsconnecting = false
@@ -220,17 +232,21 @@ const setupWS = (provider) => {
 
       // always send sync step 1 when connected (main doc & sub docs)
       for (const [k, doc] of provider.docs) {
+        slogger.debug("sending sync step 1 for doc: ", k)
         const encoder = encoding.createEncoder()
         encoding.writeVarUint(encoder, messageSync)
         encoding.writeVarString(encoder, k)
         syncProtocol.writeSyncStep1(encoder, doc)
         websocket.send(encoding.toUint8Array(encoder))
+        slogger.debug("sent sync step 1 for doc: ", k)
       }
 
       for (const [docId, docAwareness] of provider.docsAwareness) {
         const doc = provider.getDoc(docId)
         // broadcast local awareness state
         if (docAwareness.getLocalState() !== null) {
+          alogger.debug("sending awareness localState for doc: ", docId)
+
           const encoderAwarenessState = encoding.createEncoder()
           provider.encodeAwareness(encoderAwarenessState, docId, docAwareness, [doc.clientID])
           websocket.send(encoding.toUint8Array(encoderAwarenessState))
@@ -244,6 +260,7 @@ const setupWS = (provider) => {
     provider.emit('status', [{
       status: 'connecting'
     }])
+    logger.debug(`WebSocket setup to {} done`, provider.url)
   }
 }
 
@@ -599,6 +616,7 @@ export class WebsocketProvider extends Observable {
     encoding.writeVarString(encoderState, this.roomname)
     syncProtocol.writeSyncStep2(encoderState, this.doc)
     bc.publish(this.bcChannel, encoding.toUint8Array(encoderState), this)
+    logger.debug(`Connecting broadcast to ${this.url}, published sync step1`)
 
     // write queryAwareness
     const encoderAwarenessQuery = encoding.createEncoder()
@@ -619,6 +637,7 @@ export class WebsocketProvider extends Observable {
       encoding.toUint8Array(encoderAwarenessState),
       this
     )
+    logger.debug(`Connected broadcast to ${this.url}`)
   }
 
   disconnectBc () {
