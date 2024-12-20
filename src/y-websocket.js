@@ -46,7 +46,7 @@ messageHandlers[messageSync] = (
   const docGuid = decoding.readVarString(decoder)
   const doc = provider.getDoc(docGuid)
   if (!doc) {
-    console.error('doc not found with id: ', docGuid)
+    console.error('sync: doc not found with id: ', docGuid)
     return
   }
   encoding.writeVarUint(encoder, messageSync)
@@ -79,7 +79,7 @@ messageHandlers[messageQueryAwareness] = (
   log.debug("query awareness for: ", docGuid)
   const doc = provider.getDoc(docGuid)
   if (!doc) {
-    console.error('doc not found with id: ', docGuid)
+    console.error('query awareness:  doc not found with id: ', docGuid)
     return
   }
   let docAwareness = provider.getAwareness(docGuid)
@@ -96,7 +96,7 @@ messageHandlers[messageAwareness] = (
   const docGuid = decoding.readVarString(decoder)
   const doc = provider.getDoc(docGuid)
   if (!doc) {
-    console.error('doc not found with id: ', docGuid)
+    console.error('message awareness: doc not found with id: ', docGuid)
     return
   }
   alogger.debug("receiving awareness update for: ", docGuid)
