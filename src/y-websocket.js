@@ -404,11 +404,8 @@ export class WebsocketProvider extends Observable {
      */
     this._updateHandler = (update, origin) => {
       if (origin !== this) {
-        const encoder = encoding.createEncoder()
-        encoding.writeVarUint(encoder, messageSync)
-        encoding.writeVarString(encoder, this.roomname)
-        syncProtocol.writeUpdate(encoder, update)
-        broadcastMessage(this, encoding.toUint8Array(encoder))
+        const syncUpdateBytes = this.encodeSyncUpdate(this.roomname,update)
+        broadcastMessage(this, syncUpdateBytes)
       }
     }
     this.doc.on('update', this._updateHandler)
@@ -483,11 +480,8 @@ export class WebsocketProvider extends Observable {
     this._getSubDocUpdateHandler = (id) => {
       return (update, origin) => {
         if (origin === this) return
-        const encoder = encoding.createEncoder()
-        encoding.writeVarUint(encoder, messageSync)
-        encoding.writeVarString(encoder, id)
-        syncProtocol.writeUpdate(encoder, update)
-        broadcastMessage(this, encoding.toUint8Array(encoder))
+        const syncUpdateBytes = this.encodeSyncUpdate(id,update);
+        broadcastMessage(this, syncUpdateBytes)
       }
     }
   }
@@ -519,6 +513,14 @@ export class WebsocketProvider extends Observable {
     encoding.writeVarUint(encoder, messageSync)
     encoding.writeVarString(encoder, docId)
     syncProtocol.writeSyncStep2(encoder, this.docs.get(docId))
+    return encoding.toUint8Array(encoder)
+  }
+
+  encodeSyncUpdate (docId, update) {
+    const encoder = encoding.createEncoder()
+    encoding.writeVarUint(encoder, messageSync)
+    encoding.writeVarString(encoder, docId)
+    syncProtocol.writeUpdate(encoder, update)
     return encoding.toUint8Array(encoder)
   }
   /**
