@@ -514,6 +514,13 @@ export class WebsocketProvider extends Observable {
     syncProtocol.writeSyncStep1(encoder, this.docs.get(docId))
     return encoding.toUint8Array(encoder)
   }
+  encodeSyncStep2 (docId) {
+    const encoder = encoding.createEncoder()
+    encoding.writeVarUint(encoder, messageSync)
+    encoding.writeVarString(encoder, docId)
+    syncProtocol.writeSyncStep2(encoder, this.docs.get(docId))
+    return encoding.toUint8Array(encoder)
+  }
   /**
    * @param {Y.Doc} subdoc
    */
@@ -611,11 +618,8 @@ export class WebsocketProvider extends Observable {
     const sync1Bytes= this.encodeSyncStep1(this.roomname)
     bc.publish(this.bcChannel, sync1Bytes, this)
     // broadcast local state
-    const encoderState = encoding.createEncoder()
-    encoding.writeVarUint(encoderState, messageSync)
-    encoding.writeVarString(encoderState, this.roomname)
-    syncProtocol.writeSyncStep2(encoderState, this.doc)
-    bc.publish(this.bcChannel, encoding.toUint8Array(encoderState), this)
+    const sync2Bytes = this.encodeSyncStep2(this.roomname)
+    bc.publish(this.bcChannel, sync2Bytes, this)
     logger.debug(`Connecting broadcast to ${this.url}, published sync step1`)
 
     // write queryAwareness
