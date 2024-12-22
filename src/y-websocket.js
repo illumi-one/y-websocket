@@ -233,7 +233,7 @@ const setupWS = (provider) => {
       // always send sync step 1 when connected (main doc & sub docs)
       for (const [k, doc] of provider.docs) {
         slogger.debug("sending sync step 1 for doc: ", k)
-        const messageBytes= provider.encodeSyncStep1(k)
+        const messageBytes= provider._encodeSyncStep1(k)
         websocket.send(messageBytes)
         slogger.debug("sent sync step 1 for doc: ", k)
       }
@@ -377,7 +377,7 @@ export class WebsocketProvider extends Observable {
           // resend sync step 1 for all documents
           for (const [k, doc] of this.docs) {
             slogger.debug("resending sync step 1 for doc: ", k)
-            const messageBytes = this.encodeSyncStep1(k)
+            const messageBytes = this._encodeSyncStep1(k)
             this.ws.send(messageBytes)
             slogger.debug("resent sync step 1 for doc: ", k)
           }
@@ -404,7 +404,7 @@ export class WebsocketProvider extends Observable {
      */
     this._updateHandler = (update, origin) => {
       if (origin !== this) {
-        const syncUpdateBytes = this.encodeSyncUpdate(this.roomname,update)
+        const syncUpdateBytes = this._encodeSyncUpdate(this.roomname,update)
         broadcastMessage(this, syncUpdateBytes)
       }
     }
@@ -480,7 +480,7 @@ export class WebsocketProvider extends Observable {
     this._getSubDocUpdateHandler = (id) => {
       return (update, origin) => {
         if (origin === this) return
-        const syncUpdateBytes = this.encodeSyncUpdate(id,update);
+        const syncUpdateBytes = this._encodeSyncUpdate(id,update);
         broadcastMessage(this, syncUpdateBytes)
       }
     }
@@ -501,14 +501,14 @@ export class WebsocketProvider extends Observable {
     )
   }
 
-  encodeSyncStep1 (docId) {
+  _encodeSyncStep1 (docId) {
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, messageSync)
     encoding.writeVarString(encoder, docId)
     syncProtocol.writeSyncStep1(encoder, this.docs.get(docId))
     return encoding.toUint8Array(encoder)
   }
-  encodeSyncStep2 (docId) {
+  _encodeSyncStep2 (docId) {
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, messageSync)
     encoding.writeVarString(encoder, docId)
@@ -516,7 +516,7 @@ export class WebsocketProvider extends Observable {
     return encoding.toUint8Array(encoder)
   }
 
-  encodeSyncUpdate (docId, update) {
+  _encodeSyncUpdate (docId, update) {
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, messageSync)
     encoding.writeVarString(encoder, docId)
@@ -539,7 +539,7 @@ export class WebsocketProvider extends Observable {
     this.docsAwarenessUpdateHandlers.set(subdoc.guid, subDocAwarenessUpdateHandler)
 
     // invoke sync step1
-    const messageBytes = this.encodeSyncStep1(subdoc.guid)
+    const messageBytes = this._encodeSyncStep1(subdoc.guid)
     broadcastMessage(this, messageBytes)
   }
 
@@ -617,10 +617,10 @@ export class WebsocketProvider extends Observable {
     }
     // send sync step1 to bc
     // write sync step 1
-    const sync1Bytes= this.encodeSyncStep1(this.roomname)
+    const sync1Bytes= this._encodeSyncStep1(this.roomname)
     bc.publish(this.bcChannel, sync1Bytes, this)
     // broadcast local state
-    const sync2Bytes = this.encodeSyncStep2(this.roomname)
+    const sync2Bytes = this._encodeSyncStep2(this.roomname)
     bc.publish(this.bcChannel, sync2Bytes, this)
     logger.debug(`Connecting broadcast to ${this.url}, published sync step1`)
 
