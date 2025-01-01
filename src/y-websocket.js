@@ -52,6 +52,9 @@ messageHandlers[messageSync] = (
   encoding.writeVarUint(encoder, messageSync)
   encoding.writeVarString(encoder, docGuid)
   logger.debug(`syncing doc: ${docGuid}, decoder size ${decoder.arr.length}, position ${decoder.pos}`)
+  
+  //additional logic inside - will read the state vector from the decoder, understand the diff in the doc and 
+  //write reply to the encoder with step 1/2 depending of sync message in decoder first byte
   const syncMessageType = syncProtocol.readSyncMessage(
     decoder,
     encoder,
@@ -151,14 +154,15 @@ const readMessage = (provider, buf, emitSynced) => {
 }
 
 /**
- *
+ * checks if there is content in the decoder apart from [message type][docId] 
  * @param {encoding.Encoder} encoder
  */
 const needSend = (encoder) => {
   const buf = encoding.toUint8Array(encoder)
   const decoder = decoding.createDecoder(buf)
-  decoding.readVarUint(decoder)
-  decoding.readVarString(decoder)
+  const messageType = decoding.readVarUint(decoder)
+  const docId = decoding.readVarString(decoder)
+  //checking remaining content
   return decoding.hasContent(decoder)
 }
 
