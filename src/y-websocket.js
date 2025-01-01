@@ -458,7 +458,7 @@ export class WebsocketProvider extends Observable {
         const doc = this.getDoc(docId)
         awarenessProtocol.removeAwarenessStates(
           docAwareness,
-          [doc.ClientID],
+          [doc.clientID],
           'app closed')
       }
     }
