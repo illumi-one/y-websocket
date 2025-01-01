@@ -414,6 +414,8 @@ export class WebsocketProvider extends Observable {
     this._updateHandler = (update, origin) => {
       if (origin !== this) {
         const syncUpdateBytes = this._encodeSyncUpdate(this.roomname,update)
+        this.logUpdate(origin, update);
+
         broadcastMessage(this, syncUpdateBytes)
       }
     }
@@ -489,9 +491,17 @@ export class WebsocketProvider extends Observable {
     this._getSubDocUpdateHandler = (id) => {
       return (update, origin) => {
         if (origin === this) return
+        this.logUpdate(origin, update);
         const syncUpdateBytes = this._encodeSyncUpdate(id,update);
         broadcastMessage(this, syncUpdateBytes)
       }
+    }
+  }
+
+  logUpdate(origin, update) {
+    if (slogger.getLevel() <= log.levels.DEBUG) {
+      slogger.debug(`Sending ydoc update from ${origin}: `)
+      Y.logUpdate(update)
     }
   }
 
