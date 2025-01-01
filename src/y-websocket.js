@@ -184,7 +184,12 @@ const setupWS = (provider) => {
       // @todo disable emitSync for now, should also notify sub docs
       const encoder = readMessage(provider, new Uint8Array(event.data), true)
       if (encoding.length(encoder) > 1 && needSend(encoder)) {
-        websocket.send(encoding.toUint8Array(encoder))
+        if(websocket.readyState === websocket.OPEN) {
+          websocket.send(encoding.toUint8Array(encoder))
+        }
+        else{
+          logger.info("WebSocket send failed, trying to reconnect...")
+        }
       }
     }
     websocket.onerror = (event) => {
