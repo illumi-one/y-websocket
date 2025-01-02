@@ -1,6 +1,6 @@
 {
   "name": "@illumi-one/y-websocket",
-  "version": "3.0.6",
+  "version": "3.0.8",
   "description": "Websockets provider for Yjs",
   "main": "./dist/y-websocket.cjs",
   "module": "./src/y-websocket.js",

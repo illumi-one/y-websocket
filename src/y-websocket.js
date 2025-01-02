@@ -414,7 +414,7 @@ export class WebsocketProvider extends Observable {
     this._updateHandler = (update, origin) => {
       if (origin !== this) {
         const syncUpdateBytes = this._encodeSyncUpdate(this.roomname,update)
-        this.logUpdate(origin, update);
+        this.logUpdate(this.roomname, origin, update);
 
         broadcastMessage(this, syncUpdateBytes)
       }
@@ -491,16 +491,16 @@ export class WebsocketProvider extends Observable {
     this._getSubDocUpdateHandler = (id) => {
       return (update, origin) => {
         if (origin === this) return
-        this.logUpdate(origin, update);
+        this.logUpdate(id, origin, update);
         const syncUpdateBytes = this._encodeSyncUpdate(id,update);
         broadcastMessage(this, syncUpdateBytes)
       }
     }
   }
 
-  logUpdate(origin, update) {
+  logUpdate(docName, origin, update) {
     if (slogger.getLevel() <= log.levels.DEBUG) {
-      slogger.debug(`Sending ydoc update from ${origin}: `)
+      slogger.debug(`Sending ydoc ${docName} update from ${origin}: `)
       Y.logUpdate(update)
     }
   }
@@ -617,7 +617,7 @@ export class WebsocketProvider extends Observable {
       clearInterval(this._resyncInterval)
     }
     clearInterval(this._checkInterval)
-    this.disconnect()
+    this.disconnect(1000, 'destroy')
     if (env.isNode && typeof process !== 'undefined') {
       process.off('exit', this._exitHandler)
     }
@@ -676,11 +676,11 @@ export class WebsocketProvider extends Observable {
     }
   }
 
-  disconnect () {
+  disconnect (code, reason) {
     this.shouldConnect = false
     this.disconnectBc()
     if (this.ws !== null) {
-      this.ws.close()
+      this.ws.close(code, reason)
     }
   }
 
