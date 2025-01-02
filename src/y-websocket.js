@@ -676,6 +676,10 @@ export class WebsocketProvider extends Observable {
     }
   }
 
+  /**
+     * @param {number | undefined} code
+     * @param {string | undefined} reason
+     */
   disconnect (code, reason) {
     this.shouldConnect = false
     this.disconnectBc()
