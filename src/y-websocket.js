@@ -617,7 +617,7 @@ export class WebsocketProvider extends Observable {
       clearInterval(this._resyncInterval)
     }
     clearInterval(this._checkInterval)
-    this.disconnect(1000, 'destroy')
+    this.disconnect()
     if (env.isNode && typeof process !== 'undefined') {
       process.off('exit', this._exitHandler)
     }
@@ -676,15 +676,12 @@ export class WebsocketProvider extends Observable {
     }
   }
 
-  /**
-     * @param {number | undefined} code
-     * @param {string | undefined} reason
-     */
-  disconnect (code, reason) {
+  
+  disconnect () {
     this.shouldConnect = false
     this.disconnectBc()
     if (this.ws !== null) {
-      this.ws.close(code, reason)
+      this.ws.close()
     }
   }
 
